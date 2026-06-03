@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DebtFlow — Control de Deudas</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-icon">◈</span>
+        <span class="logo-text">DebtFlow</span>
+      </div>
+      <button class="sidebar-close" id="sidebarClose" aria-label="Cerrar menú">✕</button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-view="dashboard">
+        <span class="nav-icon">▦</span> Dashboard
+      </a>
+      <a href="#" class="nav-item" data-view="debts">
+        <span class="nav-icon">◎</span> Mis Deudas
+      </a>
+      <a href="#" class="nav-item" data-view="alerts">
+        <span class="nav-icon">◈</span> Alertas
+      </a>
+      <a href="#" class="nav-item" data-view="recommendations">
+        <span class="nav-icon">◇</span> Recomendaciones
+      </a>
+      <a href="#" class="nav-item" data-view="settings">
+        <span class="nav-icon">⊙</span> Configuración
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="version-badge">v1.0.0</div>
+    </div>
+  </aside>
+
+  <!-- MAIN LAYOUT -->
+  <div class="layout" id="layout">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">
+        <span></span><span></span><span></span>
+      </button>
+      <h1 class="page-title" id="pageTitle">Dashboard</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" id="notifBtn" aria-label="Notificaciones">
+          <span class="notif-icon">◈</span>
+          <span class="notif-badge" id="notifBadge" hidden>0</span>
+        </button>
+        <button class="btn btn-primary" id="openAddDebt">
+          <span>+</span> Nueva Deuda
+        </button>
+      </div>
+    </header>
+
+    <!-- VIEWS -->
+    <main class="main-content">
+
+      <!-- ── DASHBOARD VIEW ── -->
+      <section class="view active" id="view-dashboard">
+
+        <!-- SALARY HERO -->
+        <div class="salary-hero">
+          <div class="salary-hero-inner">
+            <div class="salary-block">
+              <span class="salary-label">Salario Mensual</span>
+              <div class="salary-amount" id="salaryDisplay">$0.00</div>
+              <button class="btn btn-ghost btn-sm" id="editSalaryBtn">Editar salario</button>
+            </div>
+            <div class="salary-divider"></div>
+            <div class="salary-stats">
+              <div class="stat-pill">
+                <span class="stat-pill-label">Comprometido</span>
+                <span class="stat-pill-value negative" id="totalCommitted">$0.00</span>
+              </div>
+              <div class="stat-pill">
+                <span class="stat-pill-label">Disponible</span>
+                <span class="stat-pill-value positive" id="salaryRemaining">$0.00</span>
+              </div>
+              <div class="stat-pill">
+                <span class="stat-pill-label">Pagado este mes</span>
+                <span class="stat-pill-value" id="paidThisMonth">$0.00</span>
+              </div>
+            </div>
+          </div>
+          <!-- Progress bar -->
+          <div class="salary-progress-wrap">
+            <div class="salary-progress-track">
+              <div class="salary-progress-bar" id="salaryProgressBar"></div>
+            </div>
+            <span class="salary-progress-label" id="salaryProgressLabel">0% comprometido</span>
+          </div>
+        </div>
+
+        <!-- STATS CARDS -->
+        <div class="cards-grid">
+          <div class="card stat-card">
+            <div class="stat-card-icon icon-blue">◎</div>
+            <div class="stat-card-body">
+              <span class="stat-card-label">Total deudas</span>
+              <span class="stat-card-value" id="totalDebts">0</span>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-card-icon icon-amber">◈</div>
+            <div class="stat-card-body">
+              <span class="stat-card-label">Por vencer (7 días)</span>
+              <span class="stat-card-value" id="dueSoonCount">0</span>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-card-icon icon-red">⊗</div>
+            <div class="stat-card-body">
+              <span class="stat-card-label">Vencidas</span>
+              <span class="stat-card-value" id="overdueCount">0</span>
+            </div>
+          </div>
+          <div class="card stat-card">
+            <div class="stat-card-icon icon-green">◇</div>
+            <div class="stat-card-body">
+              <span class="stat-card-label">Innecesarias</span>
+              <span class="stat-card-value" id="unnecessaryCount">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- UPCOMING PAYMENTS -->
+        <div class="section-header">
+          <h2 class="section-title">Próximos vencimientos</h2>
+          <a href="#" class="link-subtle" data-view="debts">Ver todas →</a>
+        </div>
+        <div class="upcoming-list" id="upcomingList">
+          <div class="empty-state">
+            <span class="empty-icon">◎</span>
+            <p>No hay deudas registradas aún.</p>
+            <button class="btn btn-primary btn-sm" id="openAddDebtEmpty">Agregar primera deuda</button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ── DEBTS VIEW ── -->
+      <section class="view" id="view-debts">
+        <div class="view-toolbar">
+          <div class="search-wrap">
+            <span class="search-icon">⌕</span>
+            <input type="text" class="search-input" id="debtSearch" placeholder="Buscar deuda..." />
+          </div>
+          <div class="filter-group">
+            <select class="select-input" id="categoryFilter">
+              <option value="">Todas las categorías</option>
+              <option value="vivienda">Vivienda</option>
+              <option value="transporte">Transporte</option>
+              <option value="salud">Salud</option>
+              <option value="entretenimiento">Entretenimiento</option>
+              <option value="educacion">Educación</option>
+              <option value="servicios">Servicios</option>
+              <option value="suscripciones">Suscripciones</option>
+              <option value="otros">Otros</option>
+            </select>
+            <select class="select-input" id="statusFilter">
+              <option value="">Todos los estados</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="pagado">Pagado</option>
+              <option value="vencido">Vencido</option>
+            </select>
+          </div>
+        </div>
+        <div class="debts-list" id="debtsList">
+          <div class="empty-state">
+            <span class="empty-icon">◎</span>
+            <p>No hay deudas registradas.</p>
+            <button class="btn btn-primary btn-sm" id="openAddDebtDebts">Agregar deuda</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── ALERTS VIEW ── -->
+      <section class="view" id="view-alerts">
+        <div class="alerts-config card">
+          <h3 class="card-title">Configurar Alertas</h3>
+          <p class="card-desc">Activa notificaciones del navegador para recordar tus pagos próximos.</p>
+          <div class="alerts-options">
+            <div class="alert-option">
+              <label class="toggle-label">
+                <span>Notificaciones del navegador</span>
+                <div class="toggle-wrap">
+                  <input type="checkbox" id="browserNotifToggle" class="toggle-input" />
+                  <span class="toggle-track"></span>
+                </div>
+              </label>
+              <p class="option-desc">Recibe alertas directamente en tu navegador (requiere permiso).</p>
+              <button class="btn btn-secondary btn-sm" id="requestNotifPermission">Solicitar permiso</button>
+            </div>
+            <div class="alert-option">
+              <label class="toggle-label">
+                <span>Alerta 7 días antes</span>
+                <div class="toggle-wrap">
+                  <input type="checkbox" id="alert7Days" class="toggle-input" checked />
+                  <span class="toggle-track"></span>
+                </div>
+              </label>
+            </div>
+            <div class="alert-option">
+              <label class="toggle-label">
+                <span>Alerta 3 días antes</span>
+                <div class="toggle-wrap">
+                  <input type="checkbox" id="alert3Days" class="toggle-input" checked />
+                  <span class="toggle-track"></span>
+                </div>
+              </label>
+            </div>
+            <div class="alert-option">
+              <label class="toggle-label">
+                <span>Alerta el mismo día</span>
+                <div class="toggle-wrap">
+                  <input type="checkbox" id="alertSameDay" class="toggle-input" checked />
+                  <span class="toggle-track"></span>
+                </div>
+              </label>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="saveAlertConfig">Guardar configuración</button>
+        </div>
+
+        <div class="section-header" style="margin-top:2rem;">
+          <h2 class="section-title">Historial de alertas</h2>
+        </div>
+        <div class="alerts-log" id="alertsLog">
+          <div class="empty-state">
+            <span class="empty-icon">◈</span>
+            <p>Sin alertas recientes.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── RECOMMENDATIONS VIEW ── -->
+      <section class="view" id="view-recommendations">
+        <div class="reco-hero card">
+          <div class="reco-hero-text">
+            <h3 class="card-title">Análisis inteligente de gastos</h3>
+            <p class="card-desc">Detectamos deudas o suscripciones que podrías cancelar para mejorar tu salud financiera.</p>
+          </div>
+          <div class="reco-savings">
+            <span class="reco-savings-label">Podrías ahorrar</span>
+            <span class="reco-savings-amount" id="potentialSavings">$0.00</span>
+            <span class="reco-savings-sub">al mes</span>
+          </div>
+        </div>
+        <div class="recommendations-list" id="recommendationsList">
+          <div class="empty-state">
+            <span class="empty-icon">◇</span>
+            <p>Agrega deudas para obtener recomendaciones.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SETTINGS VIEW ── -->
+      <section class="view" id="view-settings">
+        <div class="settings-grid">
+          <div class="card settings-card">
+            <h3 class="card-title">Moneda</h3>
+            <select class="select-input" id="currencySelect">
+              <option value="USD">USD — Dólar</option>
+              <option value="EUR">EUR — Euro</option>
+              <option value="MXN">MXN — Peso Mexicano</option>
+              <option value="COP">COP — Peso Colombiano</option>
+              <option value="ARS">ARS — Peso Argentino</option>
+              <option value="PEN">PEN — Sol Peruano</option>
+              <option value="CLP">CLP — Peso Chileno</option>
+              <option value="BRL">BRL — Real Brasileño</option>
+            </select>
+          </div>
+          <div class="card settings-card">
+            <h3 class="card-title">Salario mensual</h3>
+            <div class="input-group">
+              <input type="number" class="text-input" id="salaryInput" placeholder="0.00" min="0" step="0.01" />
+              <button class="btn btn-primary" id="saveSalaryBtn">Guardar</button>
+            </div>
+          </div>
+          <div class="card settings-card">
+            <h3 class="card-title">Datos</h3>
+            <div class="settings-actions">
+              <button class="btn btn-secondary" id="exportDataBtn">Exportar JSON</button>
+              <label class="btn btn-secondary" for="importDataInput">Importar JSON</label>
+              <input type="file" id="importDataInput" accept=".json" hidden />
+              <button class="btn btn-danger" id="clearDataBtn">Borrar todo</button>
+            </div>
+          </div>
+          <div class="card settings-card">
+            <h3 class="card-title">Reiniciar mes</h3>
+            <p class="card-desc">Marca todas las deudas pagadas como pendientes para el nuevo mes.</p>
+            <button class="btn btn-secondary" id="resetMonthBtn">Iniciar nuevo mes</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- OVERLAY -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- MODAL: ADD / EDIT DEBT -->
+  <div class="modal" id="debtModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Nueva Deuda</h2>
+        <button class="modal-close" id="modalClose" aria-label="Cerrar">✕</button>
+      </div>
+      <form class="modal-form" id="debtForm" novalidate>
+        <input type="hidden" id="debtId" />
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="debtName">Nombre *</label>
+            <input type="text" class="text-input" id="debtName" placeholder="Ej: Netflix, Alquiler..." required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="debtAmount">Monto *</label>
+            <input type="number" class="text-input" id="debtAmount" placeholder="0.00" min="0" step="0.01" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="debtCategory">Categoría</label>
+            <select class="select-input" id="debtCategory">
+              <option value="vivienda">🏠 Vivienda</option>
+              <option value="transporte">🚗 Transporte</option>
+              <option value="salud">🏥 Salud</option>
+              <option value="entretenimiento">🎬 Entretenimiento</option>
+              <option value="educacion">📚 Educación</option>
+              <option value="servicios">⚡ Servicios</option>
+              <option value="suscripciones">📱 Suscripciones</option>
+              <option value="otros">📦 Otros</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="debtDueDay">Día de vencimiento *</label>
+            <input type="number" class="text-input" id="debtDueDay" placeholder="1–31" min="1" max="31" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="debtPriority">Prioridad</label>
+            <select class="select-input" id="debtPriority">
+              <option value="alta">Alta — Esencial</option>
+              <option value="media" selected>Media — Importante</option>
+              <option value="baja">Baja — Prescindible</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="debtNotes">Notas</label>
+            <input type="text" class="text-input" id="debtNotes" placeholder="Notas opcionales..." />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="toggle-label">
+            <span>¿Es recurrente mensual?</span>
+            <div class="toggle-wrap">
+              <input type="checkbox" id="debtRecurring" class="toggle-input" checked />
+              <span class="toggle-track"></span>
+            </div>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="modalCancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="modalSubmit">Guardar deuda</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT SALARY -->
+  <div class="modal" id="salaryModal" role="dialog" aria-modal="true">
+    <div class="modal-content modal-sm">
+      <div class="modal-header">
+        <h2 class="modal-title">Editar Salario</h2>
+        <button class="modal-close" id="salaryModalClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-form">
+        <div class="form-group">
+          <label class="form-label" for="salaryModalInput">Salario mensual</label>
+          <input type="number" class="text-input" id="salaryModalInput" placeholder="0.00" min="0" step="0.01" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="salaryModalCancel">Cancelar</button>
+          <button class="btn btn-primary" id="salaryModalSave">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
