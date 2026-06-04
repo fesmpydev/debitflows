@@ -69,7 +69,7 @@ const Utils = {
   id: () => `d_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
 
   formatCurrency(amount) {
-    const symbols = { USD:'$', EUR:'€', MXN:'$', COP:'$', ARS:'$', PEN:'S/', CLP:'$', BRL:'R$' };
+    const symbols = { USD:'$', EUR:'€', MXN:'$', COP:'$', ARS:'$', PEN:'S/', CLP:'$', BRL:'R$', PYG:'₲' };
     const sym = symbols[state.settings.currency] || '$';
     if (state.settings.currency === 'COP' || state.settings.currency === 'CLP') {
       return `${sym}${Math.round(amount).toLocaleString('es')}`;
