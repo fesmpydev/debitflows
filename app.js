@@ -638,8 +638,21 @@ const Notifications = {
     }
     try {
       UI.setSyncing(true);
-      // Invoca una Supabase Function llamada 'send_upcoming_payments'
-      const payload = { email: targetEmail, message: due, subject: 'Notificacion DebtFlow App' };
+
+       const message = due
+         .map(
+           (d) =>
+             `• ${d.name} — Día ${d.dueDay} — ${Utils.formatCurrency(d.amount)}`,
+         )
+         .join("\n");
+
+      const payload = {
+        username: state.user?.email ?? "usuario",
+        email: targetEmail,
+        subject: "DebtFlow — Recordatorio de pagos próximos",
+        message,
+      };
+
       const res = await db.functions.invoke('send_upcoming_payments', { body: payload });
       if (res?.status === 200 || res?.error == null) {
         Toast.show('Correo enviado correctamente.', 'success');
