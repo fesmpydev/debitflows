@@ -1,35 +1,16 @@
-/**
- * DebtFlow — app.js  v2.0
- * ─────────────────────────────────────────────────────────────
- * Arquitectura: módulos ES5 IIFE con estado centralizado
- * Almacenamiento: Supabase (PostgreSQL) + localStorage como caché
- * Tiempo real: Supabase Realtime (cambios reflejados al instante)
- * ─────────────────────────────────────────────────────────────
- */
-
 'use strict';
 
-/* ══════════════════════════════════════════════════════════════
-   CONFIGURACIÓN SUPABASE
-   Para cambiar el proyecto basta editar estas dos constantes.
-══════════════════════════════════════════════════════════════ */
 const SUPABASE_URL  = 'https://nrayngemdajgfucvkmfc.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_Crpr_en2mwwyMHB_003DSw_PkOkXG4X';   // ← anon/public key
 
-/* ══════════════════════════════════════════════════════════════
-   CLIENTE SUPABASE
-══════════════════════════════════════════════════════════════ */
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-/* ══════════════════════════════════════════════════════════════
-   ESTADO CENTRAL
-══════════════════════════════════════════════════════════════ */
 const DEFAULT_SETTINGS = {
   currency: 'PYG', salary: 0,
   alert7days: true, alert3days: true, alertSameDay: true, browserNotif: false,
 };
-// Añadidos defaults para recordatorios por email
+
 DEFAULT_SETTINGS.emailReminders = false;
 DEFAULT_SETTINGS.reminderEmail = '';
 
@@ -42,9 +23,6 @@ const state = {
   isSyncing: false,
 };
 
-/* ══════════════════════════════════════════════════════════════
-   CACHÉ LOCAL  (respaldo offline y primera carga rápida)
-══════════════════════════════════════════════════════════════ */
 const Cache = {
   KEY_PREFIX:  'df_user_',
   KEY_DEBTS:   'debts_cache',
@@ -184,7 +162,6 @@ const Auth = {
       }
       Toast.show('Bienvenido de nuevo.', 'success');
     } catch (err) {
-      console.error(err);
       Toast.show('Email o contraseña incorrectos.', 'error');
     }
   },
@@ -210,7 +187,6 @@ const Auth = {
       this.showAuthScreen('verify');
       Toast.show('Correo de verificación enviado. Revisa tu bandeja.', 'success');
     } catch (err) {
-      console.error(err);
       Toast.show('No se pudo crear la cuenta. Verifica los datos.', 'error');
     }
   },
@@ -252,21 +228,13 @@ const Auth = {
       if (this.timerId) clearInterval(this.timerId);
       this.timerId = setInterval(() => Notifications.checkDueDebts(), 60 * 60 * 1000);
     } catch (err) {
-      console.error('Supabase load error:', err);
       UI.updateSyncStatus('offline', 'Sin conexión — usando caché');
       Toast.show('Usando datos en caché. Verifica tu conexión.', 'warning');
     }
   },
 };
 
-/* ══════════════════════════════════════════════════════════════
-   CAPA DE ACCESO A DATOS  (SupabaseDB)
-   Toda la lógica de red está aquí. Si en el futuro cambia
-   el backend, sólo se modifica este objeto.
-══════════════════════════════════════════════ */
 const SupabaseDB = {
-
-  /* ── DEBTS ─────────────────────────────────────────────── */
 
   _authUserId() {
     return state.user?.id || null;
@@ -335,8 +303,6 @@ const SupabaseDB = {
     if (error) throw error;
   },
 
-  /* ── SETTINGS ───────────────────────────────────────────── */
-
   async fetchSettings() {
     const uid = this._authUserId();
     const { data, error } = await db
@@ -355,8 +321,6 @@ const SupabaseDB = {
       .upsert({ user_id: uid, ...SupabaseDB._settingsToRow(settings) });
     if (error) throw error;
   },
-
-  /* ── ALERT LOGS ─────────────────────────────────────────── */
 
   async fetchAlertLogs() {
     const uid = this._authUserId();
@@ -383,8 +347,6 @@ const SupabaseDB = {
     // error code 23505 = unique violation — esperado, ignorar
     if (error && error.code !== '23505') throw error;
   },
-
-  /* ── REALTIME ────────────────────────────────────────────── */
 
   channelRef: null,
 
@@ -433,8 +395,6 @@ const SupabaseDB = {
     Render.all();
   },
 
-  /* ── MAPPERS (snake_case DB  ↔  camelCase JS) ──────────── */
-
   _rowToDebt(row) {
     return {
       id:            row.id,
@@ -452,7 +412,7 @@ const SupabaseDB = {
 
   _debtToRow(debt) {
     return {
-      id:              debt.id || undefined,   // undefined → Supabase genera uuid
+      id:              debt.id || undefined,
       name:            debt.name,
       amount:          debt.amount,
       due_day:         debt.dueDay,
@@ -551,9 +511,6 @@ const Utils = {
   },
 };
 
-/* ══════════════════════════════════════════════════════════════
-   CÁLCULOS
-══════════════════════════════════════════════════════════════ */
 const Calc = {
   totalCommitted()   { return state.debts.reduce((s, d) => s + d.amount, 0); },
   paidThisMonth()    { return state.debts.filter(d => d.paidThisMonth).reduce((s, d) => s + d.amount, 0); },
@@ -565,9 +522,6 @@ const Calc = {
   potentialSavings() { return this.unnecessary().reduce((s, d) => s + d.amount, 0); },
 };
 
-/* ══════════════════════════════════════════════════════════════
-   UI HELPERS
-══════════════════════════════════════════════════════════════ */
 const UI = {
   updateSyncStatus(state, label) {
     ['syncDot','syncDotSettings'].forEach(id => {
@@ -591,9 +545,6 @@ const UI = {
   },
 };
 
-/* ══════════════════════════════════════════════════════════════
-   TOAST
-══════════════════════════════════════════════════════════════ */
 const Toast = {
   show(msg, type = 'success') {
     const container = document.getElementById('toastContainer');
@@ -608,9 +559,6 @@ const Toast = {
   },
 };
 
-/* ══════════════════════════════════════════════════════════════
-   NOTIFICACIONES
-══════════════════════════════════════════════════════════════ */
 const Notifications = {
   async requestPermission() {
     if (!('Notification' in window)) { Toast.show('Tu navegador no soporta notificaciones.', 'warning'); return false; }
@@ -664,11 +612,9 @@ const Notifications = {
       if (res?.status === 200 || res?.error == null) {
         Toast.show('Correo enviado correctamente.', 'success');
       } else {
-        console.warn(res);
         Toast.show('Error al enviar el correo.', 'error');
       }
     } catch (e) {
-      console.error(e);
       Toast.show('Error al enviar el correo.', 'error');
     } finally {
       UI.updateSyncStatus('online', 'Sincronizado');
@@ -710,9 +656,6 @@ const Notifications = {
   },
 };
 
-/* ══════════════════════════════════════════════════════════════
-   RENDER
-══════════════════════════════════════════════════════════════ */
 const Render = {
   all() {
     this.dashboard();
@@ -872,9 +815,6 @@ const Render = {
   },
 };
 
-/* ══════════════════════════════════════════════════════════════
-   MODAL
-══════════════════════════════════════════════════════════════ */
 const Modal = {
   openDebt(debt = null) {
     const isEdit = !!debt;
@@ -913,9 +853,6 @@ const Modal = {
   },
 };
 
-/* ══════════════════════════════════════════════════════════════
-   OPERACIONES CRUD DE DEUDAS
-══════════════════════════════════════════════════════════════ */
 const Debts = {
   async save(data) {
     UI.setSyncing(true);
@@ -935,7 +872,6 @@ const Debts = {
       Render.all();
       Toast.show(isEdit ? 'Deuda actualizada.' : 'Deuda guardada.', 'success');
     } catch (e) {
-      console.error(e);
       Toast.show('Error al guardar. Verifica tu conexión.', 'error');
     } finally {
       UI.updateSyncStatus('online', 'Sincronizado');
@@ -993,9 +929,6 @@ const Debts = {
   },
 };
 
-/* ══════════════════════════════════════════════════════════════
-   NAVEGACIÓN
-══════════════════════════════════════════════════════════════ */
 const Nav = {
   go(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -1008,33 +941,25 @@ const Nav = {
   },
 };
 
-/* ══════════════════════════════════════════════════════════════
-   EVENT BINDINGS
-══════════════════════════════════════════════════════════════ */
 function bindEvents() {
-  // Nav
   document.querySelectorAll('[data-view]').forEach(el =>
     el.addEventListener('click', e => { e.preventDefault(); Nav.go(el.dataset.view); })
   );
 
-  // Sidebar toggle
   document.getElementById('menuToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
   document.getElementById('sidebarClose').addEventListener('click', () => document.getElementById('sidebar').classList.remove('open'));
 
-  // Add debt buttons
   document.getElementById('openAddDebt').addEventListener('click', () => Modal.openDebt());
   document.addEventListener('click', e => {
     const id = e.target.id;
     if (id === 'openAddDebtEmpty' || id === 'openAddDebtDebts') Modal.openDebt();
   });
 
-  // Modal close
   document.getElementById('modalClose').addEventListener('click', Modal.closeDebt);
   document.getElementById('modalCancel').addEventListener('click', Modal.closeDebt);
   document.getElementById('overlay').addEventListener('click', Modal.closeAll);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') Modal.closeAll(); });
 
-  // Salary modal
   document.getElementById('editSalaryBtn').addEventListener('click', Modal.openSalary);
   document.getElementById('salaryModalClose').addEventListener('click', Modal.closeSalary);
   document.getElementById('salaryModalCancel').addEventListener('click', Modal.closeSalary);
@@ -1049,7 +974,6 @@ function bindEvents() {
     Toast.show('Salario actualizado.', 'success');
   });
 
-  // Debt form submit
   document.getElementById('debtForm').addEventListener('submit', async e => {
     e.preventDefault();
     const name   = document.getElementById('debtName').value.trim();
@@ -1072,7 +996,6 @@ function bindEvents() {
     Modal.closeDebt();
   });
 
-  // Delegated debt actions
   document.addEventListener('click', e => {
     const btn = e.target.closest('[data-id]');
     if (!btn) return;
@@ -1082,12 +1005,10 @@ function bindEvents() {
     if (btn.classList.contains('delete')) Debts.delete(id);
   });
 
-  // Search / filter
   document.getElementById('debtSearch').addEventListener('input',   () => Render.debtsList());
   document.getElementById('categoryFilter').addEventListener('change', () => Render.debtsList());
   document.getElementById('statusFilter').addEventListener('change',   () => Render.debtsList());
 
-  // Alerts config
   document.getElementById('requestNotifPermission').addEventListener('click', async () => {
     await Notifications.requestPermission();
     Render.alertsView();
@@ -1104,13 +1025,11 @@ function bindEvents() {
     Toast.show('Configuración de alertas guardada.', 'success');
   });
 
-  // Enviar recordatorio por correo ahora
   document.getElementById('emailReminderNow').addEventListener('click', async () => {
     const email = document.getElementById('emailReminderAddress').value.trim() || state.user?.email;
     await Notifications.sendUpcomingByEmail(email);
   });
 
-  // Settings — currency
   document.getElementById('currencySelect').addEventListener('change', async e => {
     state.settings.currency = e.target.value;
     await SupabaseDB.saveSettings(state.settings);
@@ -1119,7 +1038,6 @@ function bindEvents() {
     Toast.show('Moneda actualizada.', 'success');
   });
 
-  // Settings — salary
   document.getElementById('saveSalaryBtn').addEventListener('click', async () => {
     const val = parseFloat(document.getElementById('salaryInput').value);
     if (isNaN(val) || val < 0) { Toast.show('Ingresa un salario válido.', 'error'); return; }
@@ -1130,7 +1048,6 @@ function bindEvents() {
     Toast.show('Salario guardado.', 'success');
   });
 
-  // Export JSON
   document.getElementById('exportDataBtn').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify({ debts: state.debts, settings: state.settings }, null, 2)], { type:'application/json' });
     const url  = URL.createObjectURL(blob);
@@ -1140,7 +1057,6 @@ function bindEvents() {
     Toast.show('Datos exportados.', 'success');
   });
 
-  // Import JSON
   document.getElementById('importDataInput').addEventListener('change', async e => {
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
@@ -1172,10 +1088,8 @@ function bindEvents() {
     e.target.value = '';
   });
 
-  // Reset month
   document.getElementById('resetMonthBtn').addEventListener('click', Debts.resetMonth.bind(Debts));
 
-  // Clear all
   document.getElementById('clearDataBtn').addEventListener('click', async () => {
     if (!confirm('¿Borrar TODOS los datos en Supabase? Esta acción no se puede deshacer.')) return;
     UI.setSyncing(true);
@@ -1191,15 +1105,10 @@ function bindEvents() {
     finally { UI.updateSyncStatus('online', 'Sincronizado'); }
   });
 
-  // Notif bell
   document.getElementById('notifBtn').addEventListener('click', () => Nav.go('alerts'));
 }
 
-/* ══════════════════════════════════════════════════════════════
-   INIT — Carga inicial + suscripción Realtime
-══════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async () => {
   bindEvents();
   await Auth.init();
-
 });
