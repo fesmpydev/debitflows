@@ -639,6 +639,10 @@ const Notifications = {
     try {
       UI.setSyncing(true);
 
+      const { data: { session } } = await db.auth.getSession();
+
+      if (!session) { Toast.show('Sesión expirada. Vuelve a iniciar sesión.', 'error'); return; }
+      
        const message = due
          .map(
            (d) =>
@@ -653,7 +657,10 @@ const Notifications = {
         message,
       };
 
-      const res = await db.functions.invoke('send_upcoming_payments', { body: payload });
+      const res = await db.functions.invoke('send_upcoming_payments', { body: payload, headers: {
+        Authorization: `Bearer ${session.access_token}`
+      } });
+
       if (res?.status === 200 || res?.error == null) {
         Toast.show('Correo enviado correctamente.', 'success');
       } else {
