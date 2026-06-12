@@ -29,6 +29,9 @@ const DEFAULT_SETTINGS = {
   currency: 'PYG', salary: 0,
   alert7days: true, alert3days: true, alertSameDay: true, browserNotif: false,
 };
+// Añadidos defaults para recordatorios por email
+DEFAULT_SETTINGS.emailReminders = false;
+DEFAULT_SETTINGS.reminderEmail = '';
 
 const state = {
   user:     null,
@@ -469,6 +472,8 @@ const SupabaseDB = {
       alert3days:  row.alert_3days  !== false,
       alertSameDay:row.alert_same_day !== false,
       browserNotif:row.browser_notif || false,
+      emailReminders: row.email_reminders || false,
+      reminderEmail:  row.reminder_email || '',
     };
   },
 
@@ -480,6 +485,8 @@ const SupabaseDB = {
       alert_3days:   s.alert3days,
       alert_same_day:s.alertSameDay,
       browser_notif: s.browserNotif,
+      email_reminders: s.emailReminders,
+      reminder_email:  s.reminderEmail,
     };
   },
 };
@@ -619,6 +626,35 @@ const Notifications = {
     return false;
   },
 
+  async sendUpcomingByEmail(targetEmail) {
+    if (!targetEmail) {
+      Toast.show('Ingresa un correo válido.', 'error');
+      return;
+    }
+    const due = Calc.dueSoon().concat(Calc.overdue());
+    if (due.length === 0) {
+      Toast.show('No hay deudas próximas para notificar.', 'info');
+      return;
+    }
+    try {
+      UI.setSyncing(true);
+      // Invoca una Supabase Function llamada 'send_upcoming_payments'
+      const payload = { email: targetEmail, message: due, subject: 'Notificacion DebtFlow App' };
+      const res = await db.functions.invoke('send_upcoming_payments', { body: payload });
+      if (res?.status === 200 || res?.error == null) {
+        Toast.show('Correo enviado correctamente.', 'success');
+      } else {
+        console.warn(res);
+        Toast.show('Error al enviar el correo.', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      Toast.show('Error al enviar el correo.', 'error');
+    } finally {
+      UI.updateSyncStatus('online', 'Sincronizado');
+    }
+  },
+
   send(title, body, tag) {
     if (Notification.permission !== 'granted') return;
     new Notification(title, { body, tag });
@@ -718,6 +754,11 @@ const Render = {
     document.getElementById('alert7Days').checked         = t.alert7days;
     document.getElementById('alert3Days').checked         = t.alert3days;
     document.getElementById('alertSameDay').checked       = t.alertSameDay;
+    // Email reminder UI
+    const emailToggle = document.getElementById('emailReminderToggle');
+    const emailAddr   = document.getElementById('emailReminderAddress');
+    if (emailToggle) emailToggle.checked = !!t.emailReminders;
+    if (emailAddr)   emailAddr.value = t.reminderEmail || state.user?.email || '';
 
     const log = document.getElementById('alertsLog');
     log.innerHTML = state.alertLog.length === 0
@@ -1036,9 +1077,17 @@ function bindEvents() {
     state.settings.alert7days   = document.getElementById('alert7Days').checked;
     state.settings.alert3days   = document.getElementById('alert3Days').checked;
     state.settings.alertSameDay = document.getElementById('alertSameDay').checked;
+    state.settings.emailReminders = document.getElementById('emailReminderToggle').checked;
+    state.settings.reminderEmail = document.getElementById('emailReminderAddress').value.trim();
     await SupabaseDB.saveSettings(state.settings);
     Cache.saveSettings();
     Toast.show('Configuración de alertas guardada.', 'success');
+  });
+
+  // Enviar recordatorio por correo ahora
+  document.getElementById('emailReminderNow').addEventListener('click', async () => {
+    const email = document.getElementById('emailReminderAddress').value.trim() || state.user?.email;
+    await Notifications.sendUpcomingByEmail(email);
   });
 
   // Settings — currency

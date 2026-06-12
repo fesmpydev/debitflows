@@ -180,6 +180,14 @@
               <button class="btn btn-secondary btn-sm" id="requestNotifPermission">Solicitar permiso</button>
             </div>
             <div class="alert-option">
+              <label class="toggle-label"><span>Recordatorios por correo</span><div class="toggle-wrap"><input type="checkbox" id="emailReminderToggle" class="toggle-input" /><span class="toggle-track"></span></div></label>
+              <p class="option-desc">Envía un resumen de próximos pagos a tu correo.</p>
+              <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+                <input type="email" id="emailReminderAddress" class="text-input" placeholder="tu@correo.com" style="flex:1" />
+                <button class="btn btn-primary btn-sm" id="emailReminderNow">Enviar ahora</button>
+              </div>
+            </div>
+            <div class="alert-option">
               <label class="toggle-label"><span>Alerta 7 días antes</span><div class="toggle-wrap"><input type="checkbox" id="alert7Days" class="toggle-input" checked /><span class="toggle-track"></span></div></label>
             </div>
             <div class="alert-option">
